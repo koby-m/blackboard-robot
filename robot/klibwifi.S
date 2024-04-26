@@ -60,10 +60,8 @@ sendFromAP:  .ascii "AT+CIPSEND=0,4\r\n\0"
 	 @ setting up UART0, which is the connection between ARM and ESP32
 	 ldr r0, =UART0_BASEADDR
 	 bl setupUart
-
-	 @ setting up UART1, which is the connection between ARM and PC
-	 ldr r0, =UART1_BASEADDR
-	 bl setupUart
+	 @ldr r0, =UART1_BASEADDR
+	 @bl setupUart
 
 	 @ set MIO26 (ESP32_EN) as output, enable its output, drive the pin high
 	 ldr r0, =GPIO_BASEADDR
@@ -82,7 +80,7 @@ sendFromAP:  .ascii "AT+CIPSEND=0,4\r\n\0"
 	 ldr r1, =setModeAP
 	 bl sendStringUart
 	 bl uartDummyDelay
-	 
+
 	 mov r1, #0b0000000111
 	 bl outputToLEDs
 	 ldr r1, =setCWSAP
@@ -215,9 +213,25 @@ sendStringUart:
 @ Last modified: April 19th, 2024
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 sendCharUart:
-	push {r0}
+
+	push {r0,lr}
 
 	ldr r0, =UART0_BASEADDR
+	str r1, [r0, #0x30]
+
+	pop {r0,lr}
+	bx lr
+@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@ sendCharUart
+@
+@	Send a character via UART
+@
+@ Last modified: April 19th, 2024
+@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+sendCharPutty:
+	push {r0}
+
+	ldr r0, =UART1_BASEADDR
 	str r1, [r0, #0x30]
 
 	pop {r0}
@@ -231,7 +245,7 @@ sendCharUart:
 @ Last modified: April 22nd, 2024
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 recieveCharUart:
-	push {r2}
+	push {r1,r2,lr}
 	ldr r0, =UART0_BASEADDR
 	mov r1, #0
 	@str r1, [r0, #0x30]
@@ -242,10 +256,12 @@ recieveCharUart:
 		bne waitForRX
 
 	ldr r0, [r0, #0x30]
-	pop {r2}
+	mov r1, r0
+	@bl sendCharPutty
+	pop {r1,r2,lr}
 bx lr
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-@ recieveCharUart
+@ checkFIFO
 @
 @	Recieve a character via UART
 @
@@ -271,7 +287,7 @@ uartDummyDelay:
 	push {r1}
 		@ waits however long it takes the stupid rock 
 		@ to count down from this stupid number
-		ldr r1, =#0x7FFFFFF
+		ldr r1, =#0xFFFFFFF
 		uartDummyDelayLoop:
 			sub r1, r1, #1
 			cmp r1, #0

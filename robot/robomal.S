@@ -32,7 +32,7 @@ r_operation: .word r_dataJump, r_arithmeticJump,r_branchJump,r_controlJump
 	@ Write 			0x11XX
 	@ Load 			0x12XX
 	@ Store 			0x13XX
-r_dataJump: .word r_read, r_write, r_load, r_store	
+r_dataJump: .word r_read, r_write, r_load, r_store
 
 	@ Add 				0x20XX
 	@ Subtract 		0x21XX
@@ -91,15 +91,15 @@ runRobomal:
 	endRobomalLoop:
 	push {r2}
 		@ stop the motors just in case
-		
-		ldr r1, =MOTOR_0_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
-		
-		ldr r1, =MOTOR_1_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
-		pop {r2}
+
+		@ldr r1, =MOTOR_0_BASEADDR
+		@mov r2, #0
+		@bl setMotorSpeed
+
+		@ldr r1, =MOTOR_1_BASEADDR
+		@mov r2, #0
+		@bl setMotorSpeed
+		@pop {r2}
 	
 	pop {lr}
 bx lr
@@ -133,7 +133,7 @@ bx lr
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 r_fetch:
 	push {r0}
-	
+
 	ldrh r7, [r1,r6]
 	
 	add r6, r6, #0x2
@@ -222,21 +222,21 @@ r_execute:
 	r_add:
 		mov r0, r2 @ get address of dataSet start
 		ldrh r0, [r0, r9] @ load from value in dataSet offset r9
-		add r5, r5, r0 
+		add r5, r5, r0
 	b leave_r_execute
 	
 	
 	r_sub:
 		mov r0, r2 @ get address of dataSet start
 		ldrh r0, [r0, r9] @ load from value in dataSet offset r9
-		sub r5, r5, r0 
+		sub r5, r5, r0
 	b leave_r_execute
 	
 	
 	r_mul:
 		mov r0, r2 @ get address of dataSet start
 		ldrh r0, [r0, r9] @ load from value in dataSet offset r9
-		mul r5, r5, r0 
+		mul r5, r5, r0
 	b leave_r_execute
 	
 	
@@ -260,19 +260,19 @@ r_execute:
 	r_halt:
 		@ end of program
 	b leave_r_execute
-	
-	
+
+
 	r_wait:
 		@ hard sleep
-		
-		@ waits however long it takes the stupid rock 
+
+		@ waits however long it takes the stupid rock
 		@ to count down from this stupid number
 		ldr r1, =#0x4FFFFFFF
 		r_wait_loop:
 			sub r1, r1, #1
 			cmp r1, #0
 		bne r_wait_loop
-		
+
 	b leave_r_execute
 	
 	
@@ -288,7 +288,7 @@ r_execute:
 		@ set its speed slower than the left motor so it turns right
 		mov r2, #2047
 		bl setMotorSpeed
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
 		mov r2, #0
@@ -300,13 +300,13 @@ r_execute:
 		mov r2, #4095
 		bl setMotorSpeed
 		pop {r2}
-		
+
 	b leave_r_execute
 	
 	
 	r_right:
 		push {r2}
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
@@ -317,7 +317,7 @@ r_execute:
 		@ set its speed
 		mov r2, #4095
 		bl setMotorSpeed
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
 		mov r2, #0
@@ -329,13 +329,13 @@ r_execute:
 		mov r2, #2047
 		bl setMotorSpeed
 		pop {r2}
-		
+
 	b leave_r_execute
 	
 	
 	r_forward:
 		push {r2}
-	
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
@@ -346,7 +346,7 @@ r_execute:
 		@ set its speed
 		mov r2, #4095
 		bl setMotorSpeed
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
 		mov r2, #0
@@ -358,13 +358,13 @@ r_execute:
 		mov r2, #4095
 		bl setMotorSpeed
 		pop {r2}
-		
+
 	b leave_r_execute
 	
 	
 	r_backward:
 		push {r2}
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
@@ -375,7 +375,7 @@ r_execute:
 		@ set its speed
 		mov r2, #4095
 		bl setMotorSpeed
-		
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
 		mov r2, #0
@@ -387,18 +387,18 @@ r_execute:
 		mov r2, #4095
 		bl setMotorSpeed
 		pop {r2}
-	
+
 	b leave_r_execute
 	
 	
 	r_brake:
 		push {r2}
 		@ stop that bitch
-		
+
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
 		bl setMotorSpeed
-		
+
 		ldr r1, =MOTOR_1_BASEADDR
 		mov r2, #0
 		bl setMotorSpeed

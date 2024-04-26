@@ -8,8 +8,13 @@
 
 .text
 
+@ 0113 -> Ready to connect
+@ 0CE7 -> Connecting
+@ F1F0 -> Connected
+@ 0405 -> Connection closed
+
 checkForCommand:
-	push {r0,r1,r2,lr}
+	push {r0,r1,r2,r3,lr}
 
 	bl recieveCharUart
 
@@ -19,6 +24,7 @@ checkForCommand:
 
 	ldr r1, =command
 
+	@ get each character from UART FIFO buffer
 	bl recieveCharUart
 	cmp r0, #0x39
 	suble r0, r0, #0x30
@@ -47,25 +53,36 @@ checkForCommand:
 
 	str r0, [r1,#3]
 
+	@ store into one command number
 	mov r0, #0
-	ldrb r2, [r1]
+	ldrh r2, [r1]
+	and r2, #0xF
 	orr r0, r0, r2
 	lsl r0, #4
-	ldrb r2, [r1, #1]
-	orr r0, r0, r2
-	lsl r0, #4
-	ldrb r2, [r1, #2]
-	orr r0, r0, r2
-	lsl r0, #4
-	ldrb r2, [r1, #3]
-	orr r0, r0, r2
-	ldr r1, =readCommand
-	str r0, [r1]
 
-	mov r1, r0
+	ldrh r2, [r1, #1]
+	and r2, #0xF
+	orr r0, r0, r2
+	lsl r0, #4
+
+	ldrh r2, [r1, #2]
+	and r2, #0xF
+	orr r0, r0, r2
+	lsl r0, #4
+
+	ldrh r2, [r1, #3]
+	and r2, #0xF
+	orr r0, r0, r2
+
+	ldr r1, =readCommand
+	mov r2, #0xFFFF
+	and r0, r0, r2
+	strh r0, [r1]
+
+	ldr r1, [r1]
 	bl outputToSevSeg
 	leaveCheckForCommand:
-	pop {r0,r1,r2,lr}
+	pop {r0,r1,r2,r3,lr}
 bx lr
 
 .endif

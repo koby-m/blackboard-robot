@@ -13,31 +13,36 @@
 .data
 
 command: .hword 1,1,1,1
-readCommand: .hword 1
+readCommand: .hword 0
 functionMode: .word 1
 
 @ Autonomous mode
-autoInstruct: .hword  0x1111
+autoInstruct: .hword  0x4400, 0x3300
 autoData: .hword 0x1111
 
 @ Autonomous mode
-remtInstruct: .hword  0x1111, 0x3300
+remtInstruct: .hword  0x4400, 0x3300
 remtData: .hword 0x1111
 
 @ Line following mode
-lineInstruct: .hword  0x1111
+lineInstruct: .hword  0x4400, 0x3300
 lineData: .hword 0x1111
 
-@ Programmable mode - max 32 instructions
-progInstruct: .hword  0,0,0,0,0,0
+@ Programmable mode - max 32 instructions?
+progInstruct: .hword  0x4400, 0x3300
 progData: .hword 0x1111
 
 .text 
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 main:
+	mov r1, #0
+	mov r2, #1
+	bl setupPmod
+	mov r2, #0
+	bl setupPmod
 
 	bl setupSevSeg
-	
+
 	bl setupWifiHost
 
 	ldr r1, =MOTOR_0_BASEADDR
@@ -59,7 +64,7 @@ main:
 		bl checkForCommand
 		
 		skipUart:	
-		
+
 		@ get switch states and store to functionMode memory spot
 		bl getSwitchStates
 		ldr r1, =functionMode
@@ -85,9 +90,9 @@ main:
 		
 		instructSet_Ett: @ remote-control mode
 			ldr r2, =readCommand
-			ldr r2, [r2]
+			ldrh r2, [r2]
 			ldr r1, =remtInstruct
-			str r2, [r1]
+			strh r2, [r1]
 			b continueToExecute
 
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -108,7 +113,6 @@ main:
 			bl outputToSevSeg
 			
 			ldr r1, =progInstruct
-			ldr r2, =progData
 			
 			b mainloop
 			
