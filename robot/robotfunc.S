@@ -13,6 +13,14 @@
 @ F1F0 -> Connected
 @ 0405 -> Connection closed
 
+@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+@ checkForCommand
+@
+@		Stores command from FIFO buffer into a global readCommand variable
+@		Ignores connection codes
+@
+@ Last modified: April 27th, 2024
+@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 checkForCommand:
 	push {r0,r1,r2,r3,lr}
 
@@ -77,13 +85,34 @@ checkForCommand:
 	ldr r1, =readCommand
 	mov r2, #0xFFFF
 	and r0, r0, r2
-	strh r0, [r1]
+		
+		@ these ones should be ignored
+		mov r2, #0x0113
+		cmp r0, r2
+		beq leaveCheckForCommand
 
+		mov r2, #0x0CE7
+		cmp r0, r2
+		beq leaveCheckForCommand
+
+		mov r2, #0xF1F0
+		cmp r0, r2
+		beq leaveCheckForCommand
+
+		mov r2, #0x0405
+		cmp r0, r2
+		beq leaveCheckForCommand
+		
+	strh r0, [r1]
+	leaveCheckForCommand:
 	ldr r1, [r1]
 	bl outputToSevSeg
-	leaveCheckForCommand:
 	pop {r0,r1,r2,r3,lr}
 bx lr
+
+
+
+
 
 .endif
 

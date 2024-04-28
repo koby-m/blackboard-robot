@@ -28,11 +28,13 @@
 r_operation: .word r_dataJump, r_arithmeticJump,r_branchJump,r_controlJump
 @ Suboperation jump-table
 
-	@ Read 			0x10XX
-	@ Write 			0x11XX
-	@ Load 			0x12XX
-	@ Store 			0x13XX
-r_dataJump: .word r_read, r_write, r_load, r_store
+	@ Read 				0x10XX
+	@ Write 				0x11XX
+	@ Load 				0x12XX
+	@ Store 				0x13XX
+	@ Line sensors 		0x14XX
+	@ Collision sensors 	0x15XX
+r_dataJump: .word r_read, r_write, r_load, r_store, r_lineSensors, r_collisionSensors
 
 	@ Add 				0x20XX
 	@ Subtract 		0x21XX
@@ -73,7 +75,7 @@ r_controlJump: .word r_left, r_right, r_forward, r_backward, r_brake
 @ Last modified: March 6th, 2024
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 runRobomal:
-	push {lr}
+	push {r7,r8,r9,lr}
 	
 	mov r6, #0
 	
@@ -89,7 +91,7 @@ runRobomal:
 	cmp r8, #0x33
 	bne runRobomalLoop
 	endRobomalLoop:
-	push {r2}
+		@push {r2}
 		@ stop the motors just in case
 
 		@ldr r1, =MOTOR_0_BASEADDR
@@ -101,7 +103,7 @@ runRobomal:
 		@bl setMotorSpeed
 		@pop {r2}
 	
-	pop {lr}
+	pop {r7,r8,r9,lr}
 bx lr
 
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -135,6 +137,11 @@ r_fetch:
 	push {r0}
 
 	ldrh r7, [r1,r6]
+	
+	push {r1,lr}
+	mov r1, r7
+	bl outputToSevSeg
+	pop {r1,lr}
 	
 	add r6, r6, #0x2
 	
@@ -218,6 +225,35 @@ r_execute:
 		strh r5, [r0, r9] @ set r5 to value in dataSet offset r9
 	b leave_r_execute
 	
+	r_lineSensors: @ change drive instruction based on sensor status
+		push {r2}
+		mov r1, #1
+		bl pmodRead @ read bottom row
+		
+		ldr r1, =lineInstruct
+		
+		cmp r0, #0b0011
+		mov r2, #0x4200
+		streqh r2, [r1, #2]
+
+		cmp r0, #0b0001
+		mov r2, #0x4000
+		streqh r2, [r1, #2]
+
+		cmp r0, #0b0010
+		mov r2, #0x4100
+		streqh r2, [r1, #2]
+
+		cmp r0, #0
+		mov r2, #0x4400
+		streqh r2, [r1, #2]
+
+		pop {r2}
+	
+	b leave_r_execute
+	
+	r_collisionSensors: 
+	b leave_r_execute
 	
 	r_add:
 		mov r0, r2 @ get address of dataSet start
@@ -283,10 +319,10 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed slower than the left motor so it turns right
-		mov r2, #2047
+		mov r2, #3047
 		bl setMotorSpeed
 
 		@ first stop the motor in case its running
@@ -294,7 +330,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095
@@ -312,7 +348,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095
@@ -323,10 +359,10 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed slower than the right motor so it turns left
-		mov r2, #2047
+		mov r2, #3047
 		bl setMotorSpeed
 		pop {r2}
 
@@ -341,7 +377,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095
@@ -352,7 +388,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #0
+		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095
@@ -370,7 +406,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #1
+		mov r2, #0
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095
@@ -381,7 +417,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorSpeed
 		@ set its direction
-		mov r2, #1
+		mov r2, #0
 		bl setMotorDirection
 		@ set its speed
 		mov r2, #4095

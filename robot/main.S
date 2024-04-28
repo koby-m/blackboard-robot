@@ -3,6 +3,8 @@
 
 .global command
 .global readCommand
+.global lineInstruct
+.global autoInstruct
 
 .include "../src/robomal.S"
 .include "../src/robotfunc.S"
@@ -13,7 +15,7 @@
 .data
 
 command: .hword 1,1,1,1
-readCommand: .hword 0
+readCommand: .hword 0x4400
 functionMode: .word 1
 
 @ Autonomous mode
@@ -25,7 +27,7 @@ remtInstruct: .hword  0x4400, 0x3300
 remtData: .hword 0x1111
 
 @ Line following mode
-lineInstruct: .hword  0x4400, 0x3300
+lineInstruct: .hword  0x1400, 0x4400, 0x3300
 lineData: .hword 0x1111
 
 @ Programmable mode - max 32 instructions?
@@ -62,6 +64,9 @@ main:
 
 		@ See if there is a command to be read
 		bl checkForCommand
+		
+		ldr r1, =readCommand
+		ldr r1, [r1]
 		
 		skipUart:	
 
