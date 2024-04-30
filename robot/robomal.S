@@ -21,6 +21,8 @@
 
 .include "../src/klibio.S"
 .include "../src/klibmtr.S"
+.include "../src/klibwifi.S"
+.include "../src/robotfunc.S"
 
 .data
 
@@ -80,13 +82,39 @@ runRobomal:
 	mov r6, #0
 	
 	runRobomalLoop:
-			push {r1}
-			ldr r1, =functionMode
-			ldr r1, [r1]
-			bl getSwitchStates @ check to see if switches match function mode
-			cmp r0, r1
-			pop {r1}
-		bne endRobomalLoop @ if switches don't match functionMode, leave
+			push {r1,r2,r3}
+
+			bl checkFIFO
+			cmp r0, #0
+			bne leaveCheck
+
+			@ See if there is a command to be read
+			bl checkForCommand
+
+			ldr r1, =readCommand
+			ldrh r1, [r1]
+			ldr r0, =functionMode
+			ldrh r0, [r0]
+
+			mov r3, #0xFF00
+			mov r2, r1
+			and r2, r2, r3
+			mov r3, #0xEE00
+			cmp r2, r3
+
+			bne leaveCheck
+
+			cmp r1, r0
+			ldrne r0, =functionMode
+			strneh r1, [r0]
+			movne r1, #0x4400
+			ldrne r0, =readCommand
+			strneh r1, [r0]
+			popne {r1,r2,r3}
+			bne endRobomalLoop
+
+			leaveCheck:
+			pop {r1,r2,r3}
 	bl simClockCycle
 	cmp r8, #0x33
 	bne runRobomalLoop
@@ -225,23 +253,26 @@ r_execute:
 		mov r1, #1
 		bl pmodRead @ read bottom row
 		
-		ldr r1, =lineInstruct
+		pop {r1} @ pop to get original address
+		mov r3, r1
+		sub r3, r3, #0x8
+		push {r1} @ re-push
 		
 		cmp r0, #0b0011
-		mov r2, #0x4203
-		streqh r2, [r1, #2]
+		mov r2, #0x4202
+		streqh r2, [r3, r6]
 
 		cmp r0, #0b0001
-		mov r2, #0x400E
-		streqh r2, [r1, #2]
+		mov r2, #0x4002
+		streqh r2, [r3, r6]
 
 		cmp r0, #0b0010
-		mov r2, #0x410E
-		streqh r2, [r1, #2]
+		mov r2, #0x4102
+		streqh r2, [r3, r6]
 
 		cmp r0, #0
-		mov r2, #0x4203
-		streqh r2, [r1, #2]
+		mov r2, #0x4202
+		streqh r2, [r3, r6]
 
 		pop {r2}
 	
@@ -277,10 +308,7 @@ r_execute:
 				mov r1, #2200
 				bl setServoAngle
 		
-				@ first stop the motor in case its running
 				ldr r1, =MOTOR_0_BASEADDR
-				mov r2, #0
-				bl setMotorSpeed
 				@ set its direction
 				mov r2, #0
 				bl setMotorDirection
@@ -288,10 +316,7 @@ r_execute:
 				mov r2, #3295
 				bl setMotorSpeed
 
-				@ first stop the motor in case its running
 				ldr r1, =MOTOR_1_BASEADDR
-				mov r2, #0
-				bl setMotorSpeed
 				@ set its direction
 				mov r2, #0
 				bl setMotorDirection
@@ -309,10 +334,7 @@ r_execute:
 				mov r1, #3500
 				bl setServoAngle
 				
-				@ first stop the motor in case its running
 				ldr r1, =MOTOR_0_BASEADDR
-				mov r2, #0
-				bl setMotorSpeed
 				@ set its direction
 				mov r2, #0
 				bl setMotorDirection
@@ -320,10 +342,7 @@ r_execute:
 				mov r2, #4095
 				bl setMotorSpeed
 
-				@ first stop the motor in case its running
 				ldr r1, =MOTOR_1_BASEADDR
-				mov r2, #0
-				bl setMotorSpeed
 				@ set its direction
 				mov r2, #0
 				bl setMotorDirection
@@ -403,15 +422,12 @@ r_execute:
 		
 		mov r3, r9
 		and r3, r3, #0xF
-		mov r4, #66
+		mov r4, #93
 		mul r3, r3, r4
-		mov r4, #3105
+		mov r4, #2700
 		add r3, r3, r4
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -419,10 +435,7 @@ r_execute:
 		mov r2, #0@3047
 		bl setMotorSpeed
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -442,15 +455,12 @@ r_execute:
 
 		mov r3, r9
 		and r3, r3, #0xF
-		mov r4, #66
+		mov r4, #93
 		mul r3, r3, r4
-		mov r4, #3105
+		mov r4, #2700
 		add r3, r3, r4
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -458,10 +468,7 @@ r_execute:
 		mov r2, r3
 		bl setMotorSpeed
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -481,15 +488,12 @@ r_execute:
 		
 		mov r3, r9
 		and r3, r3, #0xF
-		mov r4, #66
+		mov r4, #93
 		mul r3, r3, r4
-		mov r4, #3105
+		mov r4, #2700
 		add r3, r3, r4
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -497,10 +501,7 @@ r_execute:
 		mov r2, r3
 		bl setMotorSpeed
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #1
 		bl setMotorDirection
@@ -521,15 +522,12 @@ r_execute:
 		
 		mov r3, r9
 		and r3, r3, #0xF
-		mov r4, #66
+		mov r4, #93
 		mul r3, r3, r4
-		mov r4, #3105
+		mov r4, #2700
 		add r3, r3, r4
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #0
 		bl setMotorDirection
@@ -537,10 +535,7 @@ r_execute:
 		mov r2, r3
 		bl setMotorSpeed
 
-		@ first stop the motor in case its running
 		ldr r1, =MOTOR_1_BASEADDR
-		mov r2, #0
-		bl setMotorSpeed
 		@ set its direction
 		mov r2, #0
 		bl setMotorDirection

@@ -110,6 +110,8 @@ sendFromAP:  .ascii "AT+CIPSEND=0,4\r\n\0"
 	 ldr r1, =sendFromAP
 	 bl sendStringUart
 	 bl uartDummyDelay
+	 mov r1, #0
+	 bl outputToLEDs
 	 
 
 	 pop {r0,r1,r2,lr}
@@ -287,7 +289,7 @@ uartDummyDelay:
 	push {r1}
 		@ waits however long it takes the stupid rock 
 		@ to count down from this stupid number
-		ldr r1, =#0xFFFFFFF
+		ldr r1, =#0x4FFFFFF
 		uartDummyDelayLoop:
 			sub r1, r1, #1
 			cmp r1, #0

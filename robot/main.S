@@ -16,7 +16,7 @@
 
 command: .hword 1,1,1,1
 readCommand: .hword 0x4400
-functionMode: .word 1
+functionMode: .hword 0xEE01
 
 @ Autonomous mode
 autoInstruct: .hword  0x4400, 0x3300
@@ -67,32 +67,45 @@ main:
 		@ See if there is a command to be read
 		bl checkForCommand
 		
-		ldr r1, =readCommand
-		ldr r1, [r1]
-		
+
 		skipUart:	
 
 		@ get switch states and store to functionMode memory spot
-		bl getSwitchStates
+
+		ldr r0, =readCommand
+		ldr r0, [r0]
+		and r0, r1, #0xFF00
+		lsr r1, r1, #8
+		cmp r1, #0xEE
+		bne continueMain
+
 		ldr r1, =functionMode
-		str r0, [r1]
-		mov r1, r0
-		bl outputToLEDs
+		strh r0, [r1]
+
+		continueMain:
+
+		ldr r0, =functionMode
+		ldrh r0, [r0]
 	
 		@ determine what instruction set to perform
-		cmp r0, #0
+		mov r1, #0xEE01
+		cmp r0, r1
 		beq instructSet_Noll @ autonomous mode
-		cmp r0, #1
+		mov r1, #0xEE02
+		cmp r0, r1
 		beq instructSet_Ett @ remote-control mode
-		cmp r0, #2
+		mov r1, #0xEE03
+		cmp r0, r1
 		beq instructSet_Tva @ line following mode
-		cmp r0, #4
+		mov r1, #0xEE04
+		cmp r0, r1
 		beq instructSet_Tre @ programmable mode
+
+		b mainloop
 		
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+ Operation Modes +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		instructSet_Noll: @ autonomous mode
 			ldr r1, =autoInstruct
-			ldr r1, =autoData
 			
 			b continueToExecute
 			
@@ -121,6 +134,13 @@ main:
 			mov r3, #0x0110
 			cmp r2, r3
 			beq instructSet_EttSkip
+
+			mov r4, r2
+			mov r3, #0xFF00
+			and r4, r4, r3
+			mov r3, #0xEE00
+			cmp r4, r3
+			beq instructSet_EttSkip
 			
 			strh r2, [r1]
 			instructSet_EttSkip:
@@ -138,12 +158,38 @@ main:
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
 		instructSet_Tre: @ programmable mode
-			mov r1, #0x4
-			bl outputToSevSeg
-			
+			ldr r2, =readCommand
+			ldrh r2, [r2]
 			ldr r1, =progInstruct
+
+			mov r3, #0x0113
+			cmp r2, r3		@ skip if informational
+			beq instructSet_TreSkip
+			mov r3, #0x0CE7
+			cmp r2, r3
+			beq instructSet_TreSkip
+			mov r3, #0xF1F0
+			cmp r2, r3
+			beq instructSet_TreSkip
+			mov r3, #0x0405
+			cmp r2, r3
+			beq instructSet_TreSkip
+			mov r3, #0x2235
+			cmp r2, r3
+			beq instructSet_TreSkip
+			mov r3, #0x0110
+			cmp r2, r3
+			beq instructSet_TreSkip
 			
+			strh r2, [r1]
+			mov r3, #0x3300
+			cmp r2, r3
+			beq instructSet_TreGo
+			instructSet_TreSkip:
 			b mainloop
+
+			instructSet_TreGo:
+			b continueToExecute
 			
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
