@@ -22,12 +22,12 @@ functionMode: .word 1
 autoInstruct: .hword  0x4400, 0x3300
 autoData: .hword 0x1111
 
-@ Autonomous mode
+@ Remote control mode
 remtInstruct: .hword  0x4400, 0x3300
 remtData: .hword 0x1111
 
 @ Line following mode
-lineInstruct: .hword  0x1400, 0x4400, 0x3300
+lineInstruct: .hword  0x1400, 0x4400, 0x1500, 0x3300
 lineData: .hword 0x1111
 
 @ Programmable mode - max 32 instructions?
@@ -52,6 +52,8 @@ main:
 
 	ldr r1, =MOTOR_1_BASEADDR
 	bl setupMotor
+	
+	bl setupServo
 	
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	mainloop:
@@ -89,7 +91,10 @@ main:
 		
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+ Operation Modes +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		instructSet_Noll: @ autonomous mode
-			b mainloop
+			ldr r1, =autoInstruct
+			ldr r1, =autoData
+			
+			b continueToExecute
 			
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
@@ -97,15 +102,34 @@ main:
 			ldr r2, =readCommand
 			ldrh r2, [r2]
 			ldr r1, =remtInstruct
+			
+			mov r3, #0x0113
+			cmp r2, r3		@ skip if informational
+			beq instructSet_EttSkip
+			mov r3, #0x0CE7
+			cmp r2, r3
+			beq instructSet_EttSkip
+			mov r3, #0xF1F0
+			cmp r2, r3
+			beq instructSet_EttSkip
+			mov r3, #0x0405
+			cmp r2, r3
+			beq instructSet_EttSkip
+			mov r3, #0x2235
+			cmp r2, r3
+			beq instructSet_EttSkip
+			mov r3, #0x0110
+			cmp r2, r3
+			beq instructSet_EttSkip
+			
 			strh r2, [r1]
+			instructSet_EttSkip:
+			
 			b continueToExecute
 
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
-		instructSet_Tva: @ line following mode
-			mov r1, #0x3
-			bl outputToSevSeg
-			
+		instructSet_Tva: @ line following mode-
 			ldr r1, =lineInstruct
 			ldr r2, =lineData
 			

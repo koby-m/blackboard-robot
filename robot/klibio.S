@@ -680,7 +680,7 @@ dummyTimer:
 
 	push {r0}
 	
-	ldr r0, =#0xFFFFF
+	ldr r0, =#0x7FFFFFF
 	
 	DummyTimerLoop:
 		@ Literal nonsense

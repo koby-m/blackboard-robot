@@ -138,11 +138,6 @@ r_fetch:
 
 	ldrh r7, [r1,r6]
 	
-	push {r1,lr}
-	mov r1, r7
-	bl outputToSevSeg
-	pop {r1,lr}
-	
 	add r6, r6, #0x2
 	
 	pop {r0}
@@ -233,19 +228,19 @@ r_execute:
 		ldr r1, =lineInstruct
 		
 		cmp r0, #0b0011
-		mov r2, #0x4200
+		mov r2, #0x4203
 		streqh r2, [r1, #2]
 
 		cmp r0, #0b0001
-		mov r2, #0x4000
+		mov r2, #0x400E
 		streqh r2, [r1, #2]
 
 		cmp r0, #0b0010
-		mov r2, #0x4100
+		mov r2, #0x410E
 		streqh r2, [r1, #2]
 
 		cmp r0, #0
-		mov r2, #0x4400
+		mov r2, #0x4203
 		streqh r2, [r1, #2]
 
 		pop {r2}
@@ -253,6 +248,94 @@ r_execute:
 	b leave_r_execute
 	
 	r_collisionSensors: 
+		
+		mov r1, #0
+		bl pmodRead
+		
+			cmp r0, #0b1111
+			beq noCollide
+		
+			cmp r0, #0b1100
+			beq colReverseLeft
+		
+			cmp r0, #0b1110
+			beq colReverseLeft
+		
+			cmp r0, #0b0011
+			beq colReverseRight
+		
+			cmp r0, #0b0111
+			beq colReverseRight
+			
+			b colReverseRight
+			
+			
+		
+		colReverseLeft:
+				push {r2}
+		
+				mov r1, #2200
+				bl setServoAngle
+		
+				@ first stop the motor in case its running
+				ldr r1, =MOTOR_0_BASEADDR
+				mov r2, #0
+				bl setMotorSpeed
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #3295
+				bl setMotorSpeed
+
+				@ first stop the motor in case its running
+				ldr r1, =MOTOR_1_BASEADDR
+				mov r2, #0
+				bl setMotorSpeed
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #4095
+				bl setMotorSpeed
+				pop {r2}
+			bl dummyTimer
+			b noCollide
+			
+		
+		colReverseRight:
+				push {r2}
+		
+				mov r1, #3500
+				bl setServoAngle
+				
+				@ first stop the motor in case its running
+				ldr r1, =MOTOR_0_BASEADDR
+				mov r2, #0
+				bl setMotorSpeed
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #4095
+				bl setMotorSpeed
+
+				@ first stop the motor in case its running
+				ldr r1, =MOTOR_1_BASEADDR
+				mov r2, #0
+				bl setMotorSpeed
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #3295
+				bl setMotorSpeed
+				pop {r2}
+			bl dummyTimer
+			b noCollide
+		
+		noCollide:
+		
 	b leave_r_execute
 	
 	r_add:
@@ -313,7 +396,18 @@ r_execute:
 	
 	
 	r_left:
-		push {r2}
+		push {r2,r3,r4}
+		
+		mov r1, #2200
+		bl setServoAngle
+		
+		mov r3, r9
+		and r3, r3, #0xF
+		mov r4, #66
+		mul r3, r3, r4
+		mov r4, #3105
+		add r3, r3, r4
+
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
@@ -322,7 +416,7 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed slower than the left motor so it turns right
-		mov r2, #3047
+		mov r2, #0@3047
 		bl setMotorSpeed
 
 		@ first stop the motor in case its running
@@ -333,15 +427,25 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
-		pop {r2}
+		pop {r2,r3,r4}
 
 	b leave_r_execute
 	
 	
 	r_right:
-		push {r2}
+		push {r2,r3,r4}
+		
+		mov r1, #3500
+		bl setServoAngle
+
+		mov r3, r9
+		and r3, r3, #0xF
+		mov r4, #66
+		mul r3, r3, r4
+		mov r4, #3105
+		add r3, r3, r4
 
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
@@ -351,7 +455,7 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
 
 		@ first stop the motor in case its running
@@ -362,15 +466,25 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed slower than the right motor so it turns left
-		mov r2, #3047
+		mov r2, #0@3047
 		bl setMotorSpeed
-		pop {r2}
+		pop {r2,r3,r4}
 
 	b leave_r_execute
 	
 	
 	r_forward:
-		push {r2}
+		push {r2,r3,r4}
+		
+		mov r1, #2900
+		bl setServoAngle
+		
+		mov r3, r9
+		and r3, r3, #0xF
+		mov r4, #66
+		mul r3, r3, r4
+		mov r4, #3105
+		add r3, r3, r4
 
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
@@ -380,7 +494,7 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
 
 		@ first stop the motor in case its running
@@ -391,15 +505,26 @@ r_execute:
 		mov r2, #1
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
-		pop {r2}
+		
+		pop {r2,r3,r4}
 
 	b leave_r_execute
 	
 	
 	r_backward:
-		push {r2}
+		push {r2,r3,r4}
+		
+		mov r1, #2900
+		bl setServoAngle
+		
+		mov r3, r9
+		and r3, r3, #0xF
+		mov r4, #66
+		mul r3, r3, r4
+		mov r4, #3105
+		add r3, r3, r4
 
 		@ first stop the motor in case its running
 		ldr r1, =MOTOR_0_BASEADDR
@@ -409,7 +534,7 @@ r_execute:
 		mov r2, #0
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
 
 		@ first stop the motor in case its running
@@ -420,9 +545,10 @@ r_execute:
 		mov r2, #0
 		bl setMotorDirection
 		@ set its speed
-		mov r2, #4095
+		mov r2, r3
 		bl setMotorSpeed
-		pop {r2}
+		
+		pop {r2,r3,r4}
 
 	b leave_r_execute
 	

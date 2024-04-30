@@ -86,27 +86,11 @@ checkForCommand:
 	mov r2, #0xFFFF
 	and r0, r0, r2
 		
-		@ these ones should be ignored
-		mov r2, #0x0113
-		cmp r0, r2
-		beq leaveCheckForCommand
-
-		mov r2, #0x0CE7
-		cmp r0, r2
-		beq leaveCheckForCommand
-
-		mov r2, #0xF1F0
-		cmp r0, r2
-		beq leaveCheckForCommand
-
-		mov r2, #0x0405
-		cmp r0, r2
-		beq leaveCheckForCommand
 		
 	strh r0, [r1]
-	leaveCheckForCommand:
-	ldr r1, [r1]
+	mov r1, r0
 	bl outputToSevSeg
+	leaveCheckForCommand:
 	pop {r0,r1,r2,r3,lr}
 bx lr
 
