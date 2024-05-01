@@ -60,8 +60,8 @@ sendFromAP:  .ascii "AT+CIPSEND=0,4\r\n\0"
 	 @ setting up UART0, which is the connection between ARM and ESP32
 	 ldr r0, =UART0_BASEADDR
 	 bl setupUart
-	 @ldr r0, =UART1_BASEADDR
-	 @bl setupUart
+	 ldr r0, =UART1_BASEADDR
+	 bl setupUart
 
 	 @ set MIO26 (ESP32_EN) as output, enable its output, drive the pin high
 	 ldr r0, =GPIO_BASEADDR
@@ -259,7 +259,7 @@ recieveCharUart:
 
 	ldr r0, [r0, #0x30]
 	mov r1, r0
-	@bl sendCharPutty
+	bl sendCharPutty
 	pop {r1,r2,lr}
 bx lr
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

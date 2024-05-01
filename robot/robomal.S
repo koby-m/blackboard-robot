@@ -259,19 +259,19 @@ r_execute:
 		push {r1} @ re-push
 		
 		cmp r0, #0b0011
-		mov r2, #0x4202
+		mov r2, #0x4204
 		streqh r2, [r3, r6]
 
 		cmp r0, #0b0001
-		mov r2, #0x4002
+		mov r2, #0x4003
 		streqh r2, [r3, r6]
 
 		cmp r0, #0b0010
-		mov r2, #0x4102
+		mov r2, #0x4103
 		streqh r2, [r3, r6]
 
 		cmp r0, #0
-		mov r2, #0x4202
+		mov r2, #0x4204
 		streqh r2, [r3, r6]
 
 		pop {r2}
@@ -417,7 +417,11 @@ r_execute:
 	r_left:
 		push {r2,r3,r4}
 		
-		mov r1, #2200
+		mov r3, #75
+		mul r3, r3, r9
+		mov r4, #2875
+		sub r4, r4, r3
+		mov r1, r4 @ 2600 at r9 is 3
 		bl setServoAngle
 		
 		mov r3, r9
@@ -450,7 +454,11 @@ r_execute:
 	r_right:
 		push {r2,r3,r4}
 		
-		mov r1, #3500
+		mov r3, #75
+		mul r3, r3, r9
+		mov r4, #2875
+		add r3, r3, r4
+		mov r1, r3 @ 3100 at r9 is 3
 		bl setServoAngle
 
 		mov r3, r9
