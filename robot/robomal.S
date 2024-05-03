@@ -257,7 +257,7 @@ r_execute:
 		mov r3, r1
 		sub r3, r3, #0x8
 		push {r1} @ re-push
-		
+
 		cmp r0, #0b0011
 		mov r2, #0x4204
 		streqh r2, [r3, r6]
@@ -280,80 +280,7 @@ r_execute:
 	
 	r_collisionSensors: 
 		
-		mov r1, #0
-		bl pmodRead
-		
-			cmp r0, #0b1111
-			beq noCollide
-		
-			cmp r0, #0b1100
-			beq colReverseLeft
-		
-			cmp r0, #0b1110
-			beq colReverseLeft
-		
-			cmp r0, #0b0011
-			beq colReverseRight
-		
-			cmp r0, #0b0111
-			beq colReverseRight
-			
-			b colReverseRight
-			
-			
-		
-		colReverseLeft:
-				push {r2}
-		
-				mov r1, #2200
-				bl setServoAngle
-		
-				ldr r1, =MOTOR_0_BASEADDR
-				@ set its direction
-				mov r2, #0
-				bl setMotorDirection
-				@ set its speed
-				mov r2, #3295
-				bl setMotorSpeed
-
-				ldr r1, =MOTOR_1_BASEADDR
-				@ set its direction
-				mov r2, #0
-				bl setMotorDirection
-				@ set its speed
-				mov r2, #4095
-				bl setMotorSpeed
-				pop {r2}
-			bl dummyTimer
-			b noCollide
-			
-		
-		colReverseRight:
-				push {r2}
-		
-				mov r1, #3500
-				bl setServoAngle
-				
-				ldr r1, =MOTOR_0_BASEADDR
-				@ set its direction
-				mov r2, #0
-				bl setMotorDirection
-				@ set its speed
-				mov r2, #4095
-				bl setMotorSpeed
-
-				ldr r1, =MOTOR_1_BASEADDR
-				@ set its direction
-				mov r2, #0
-				bl setMotorDirection
-				@ set its speed
-				mov r2, #3295
-				bl setMotorSpeed
-				pop {r2}
-			bl dummyTimer
-			b noCollide
-		
-		noCollide:
+		bl collisionDetection
 		
 	b leave_r_execute
 	
@@ -405,12 +332,39 @@ r_execute:
 
 		@ waits however long it takes the stupid rock
 		@ to count down from this stupid number
-		ldr r1, =#0x4FFFFFFF
-		r_wait_loop:
+
+		mov r3, r9
+		lsr r3, r3, #4
+		cmp r3, #1
+		and r9, r9, #0xF
+		beq waitWithCollision
+		b regularWait
+
+		waitWithCollision:
+		ldr r1, =#0x3A97F6
+		r_wait_loop1:
+			bl collisionDetection
 			sub r1, r1, #1
 			cmp r1, #0
-		bne r_wait_loop
+		bne r_wait_loop1
+		sub r9, r9, #1
+		cmp r9, #0
+		beq doneWithWait
+		b waitWithCollision
 
+		regularWait:
+		ldr r1, =#0x18FFFFFB
+		r_wait_loop2:
+			sub r1, r1, #1
+			cmp r1, #0
+		bne r_wait_loop2
+		sub r9, r9, #1
+		cmp r9, #0
+		beq doneWithWait
+		b regularWait
+	doneWithWait:
+	mov r1, #0
+	bl outputToLEDs
 	b leave_r_execute
 	
 	
@@ -559,6 +513,8 @@ r_execute:
 	r_brake:
 		push {r2}
 		@ stop that bitch
+		mov r1, #0b1111
+		bl outputToLEDs
 
 		ldr r1, =MOTOR_0_BASEADDR
 		mov r2, #0
@@ -573,6 +529,86 @@ r_execute:
 	@ +-+-+-+-+-+-+-+-+-+-+-+-+-+ End Operations +-+-+-+-+-+-+-+-+-+-+-+-+-+
 	leave_r_execute:
 	pop {r0,r1,lr}
+bx lr
+
+
+collisionDetection:
+push {r1,r2,lr}
+mov r1, #0
+		bl pmodRead
+
+			cmp r0, #0b1111
+			beq noCollide
+
+			cmp r0, #0b1100
+			beq colReverseLeft
+
+			cmp r0, #0b1110
+			beq colReverseLeft
+
+			cmp r0, #0b0011
+			beq colReverseRight
+
+			cmp r0, #0b0111
+			beq colReverseRight
+
+			b colReverseRight
+
+
+
+		colReverseLeft:
+				push {r2}
+
+				mov r1, #2200
+				bl setServoAngle
+
+				ldr r1, =MOTOR_0_BASEADDR
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #3295
+				bl setMotorSpeed
+
+				ldr r1, =MOTOR_1_BASEADDR
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #4095
+				bl setMotorSpeed
+				pop {r2}
+			bl dummyTimer
+			b noCollide
+
+
+		colReverseRight:
+				push {r2}
+
+				mov r1, #3500
+				bl setServoAngle
+
+				ldr r1, =MOTOR_0_BASEADDR
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #4095
+				bl setMotorSpeed
+
+				ldr r1, =MOTOR_1_BASEADDR
+				@ set its direction
+				mov r2, #0
+				bl setMotorDirection
+				@ set its speed
+				mov r2, #3295
+				bl setMotorSpeed
+				pop {r2}
+			bl dummyTimer
+			b noCollide
+
+		noCollide:
+		pop {r1,r2,lr}
 bx lr
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @ EoF

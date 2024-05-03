@@ -16,10 +16,10 @@
 
 command: .hword 1,1,1,1
 readCommand: .hword 0x4400
-functionMode: .hword 0xEE01
+functionMode: .hword 0xEE00
 
 @ Autonomous mode
-autoInstruct: .hword 0x4400, 0x3400, 0x4200, 0x3400, 0x4400, 0x3300
+autoInstruct: .hword 0x4400, 0x3412, 0x4202, 0x3412, 0x4202, 0x4304, 0x3412, 0x4204, 0x3415, 0x3300
 autoData: .hword 0x1111
 
 @ Remote control mode
@@ -88,6 +88,10 @@ main:
 		ldrh r0, [r0]
 	
 		@ determine what instruction set to perform
+		mov r1, #0xEE00
+		cmp r0, r1
+		beq mainloop @ no mode
+
 		mov r1, #0xEE01
 		cmp r0, r1
 		beq instructSet_Noll @ autonomous mode
