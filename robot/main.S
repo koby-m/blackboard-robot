@@ -19,7 +19,7 @@ readCommand: .hword 0x4400
 functionMode: .hword 0xEE01
 
 @ Autonomous mode
-autoInstruct: .hword  0x4400, 0x3300
+autoInstruct: .hword 0x4400, 0x3400, 0x4200, 0x3400, 0x4400, 0x3300
 autoData: .hword 0x1111
 
 @ Remote control mode
@@ -30,9 +30,10 @@ remtData: .hword 0x1111
 lineInstruct: .hword  0x1400, 0x4400, 0x1500, 0x3300
 lineData: .hword 0x1111
 
-@ Programmable mode - max 32 instructions?
-progInstruct: .hword  0x4400, 0x3300
+@ Programmable mode - max 32 instructions
+progInstruct: .hword  0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300, 0x3300
 progData: .hword 0x1111
+progIndex: .hword 0x0
 
 .text 
 @ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -73,10 +74,9 @@ main:
 		@ get switch states and store to functionMode memory spot
 
 		ldr r0, =readCommand
-		ldr r0, [r0]
-		and r0, r1, #0xFF00
-		lsr r1, r1, #8
-		cmp r1, #0xEE
+		ldrh r0, [r0]
+		and r1, r0, #0xFF00
+		cmp r1, #0xEE00
 		bne continueMain
 
 		ldr r1, =functionMode
@@ -91,15 +91,25 @@ main:
 		mov r1, #0xEE01
 		cmp r0, r1
 		beq instructSet_Noll @ autonomous mode
+
 		mov r1, #0xEE02
 		cmp r0, r1
 		beq instructSet_Ett @ remote-control mode
+
 		mov r1, #0xEE03
 		cmp r0, r1
 		beq instructSet_Tva @ line following mode
+
 		mov r1, #0xEE04
 		cmp r0, r1
 		beq instructSet_Tre @ programmable mode
+
+		mov r1, #0xEE05
+		cmp r0, r1
+		ldreq r2, =progIndex @ reset programming index
+		moveq r3, #0
+		streqh r3, [r2]
+		beq instructSet_Fyra @ line following mode
 
 		b mainloop
 		
@@ -116,30 +126,8 @@ main:
 			ldrh r2, [r2]
 			ldr r1, =remtInstruct
 			
-			mov r3, #0x0113
-			cmp r2, r3		@ skip if informational
-			beq instructSet_EttSkip
-			mov r3, #0x0CE7
-			cmp r2, r3
-			beq instructSet_EttSkip
-			mov r3, #0xF1F0
-			cmp r2, r3
-			beq instructSet_EttSkip
-			mov r3, #0x0405
-			cmp r2, r3
-			beq instructSet_EttSkip
-			mov r3, #0x2235
-			cmp r2, r3
-			beq instructSet_EttSkip
-			mov r3, #0x0110
-			cmp r2, r3
-			beq instructSet_EttSkip
-
-			mov r4, r2
-			mov r3, #0xFF00
-			and r4, r4, r3
-			mov r3, #0xEE00
-			cmp r4, r3
+			bl skipCheck
+			cmp r0, #1
 			beq instructSet_EttSkip
 			
 			strh r2, [r1]
@@ -157,45 +145,95 @@ main:
 			
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
-		instructSet_Tre: @ programmable mode
+		instructSet_Tre: @ programmable mode programming
 			ldr r2, =readCommand
 			ldrh r2, [r2]
 			ldr r1, =progInstruct
 
-			mov r3, #0x0113
-			cmp r2, r3		@ skip if informational
-			beq instructSet_TreSkip
-			mov r3, #0x0CE7
-			cmp r2, r3
-			beq instructSet_TreSkip
-			mov r3, #0xF1F0
-			cmp r2, r3
-			beq instructSet_TreSkip
-			mov r3, #0x0405
-			cmp r2, r3
-			beq instructSet_TreSkip
-			mov r3, #0x2235
-			cmp r2, r3
-			beq instructSet_TreSkip
-			mov r3, #0x0110
-			cmp r2, r3
-			beq instructSet_TreSkip
+			cmp r2, #0
+			beq mainloop
+
+			bl skipCheck
+			cmp r0, #1
+			beq instructSet_EttSkip
+			ldr r4, =progIndex
+			ldrh r4, [r4]
+			cmp r4, #32
+			beq executeProg
+			lsl r4, r4, #1
 			
-			strh r2, [r1]
+			strh r2, [r1, r4]
+
+			mov r5, #0
+			ldr r6, =readCommand
+			strh r5, [r6]
+
+			lsr r4, r4, #1
+			add r3, r4, #1
+			ldr r4, =progIndex
+			strh r3, [r4]
+
 			mov r3, #0x3300
 			cmp r2, r3
-			beq instructSet_TreGo
-			instructSet_TreSkip:
-			b mainloop
+			bne continueToGetInstruct
+			executeProg:
 
-			instructSet_TreGo:
-			b continueToExecute
+			ldr r0, =functionMode
+			mov r1, #0xEE05
+			strh r1, [r0]
+
+			continueToGetInstruct:
+			b mainloop
 			
+
+		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+		instructSet_Fyra: @ programmable mode executing
+			ldr r1, =progInstruct
+			ldr r2, =progData
+
+			b continueToExecute
+
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 		
 		continueToExecute:
 			bl runRobomal
 		@ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	b mainloop
+
+
+
+skipCheck:
+	push {r3,r4}
+
+	mov r3, #0x0113
+	cmp r2, r3		@ skip if informational
+	moveq r0, #1
+	mov r3, #0x0CE7
+	cmp r2, r3
+	moveq r0, #1
+	mov r3, #0xF1F0
+	cmp r2, r3
+	moveq r0, #1
+	mov r3, #0x0405
+	cmp r2, r3
+	moveq r0, #1
+	mov r3, #0x2235
+	cmp r2, r3
+	moveq r0, #1
+	mov r3, #0x0110
+	cmp r2, r3
+	moveq r0, #1
+
+	mov r4, r2
+	mov r3, #0xFF00
+	and r4, r4, r3
+	mov r3, #0xEE00
+	cmp r4, r3
+	moveq r0, #1
+	pop {r3,r4}
+
+bx lr
+
 
 .end
