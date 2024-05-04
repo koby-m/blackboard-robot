@@ -1,6 +1,5 @@
 **Name:**<br>
-ARM Assembly RealDigital Blackboard Robot<br>
-with Arduino interfaced joystick controller<br>
+ARM Assembly RealDigital Blackboard Robot with Arduino interfaced joystick controller <br>
 [Full report](https://docs.google.com/document/d/19DiZo90nZ22CptFs17WNBeS4bCwxTsbGDQvRNfdNBiI/edit?usp=sharing)
 
 **Version:**<br>
